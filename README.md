@@ -118,7 +118,7 @@ FastAPI는 애초에 비동기 프레임워크입니다. 비동기 I/O 작업과
 ### I/O 집약적 작업
 내부적으로 FastAPI는 비동기 및 동기 I/O 작업을 모두 [효과적으로 처리](https://fastapi.tiangolo.com/async/#path-operation-functions) 할 수 있습니다. 
 - FastAPI는 [스레드풀](https://en.wikipedia.org/wiki/Thread_pool)에서 `sync` routes를 실행하며, `blocking I/O 작업`은 [이벤트 루프](https://docs.python.org/3/library/asyncio-eventloop.html)가 작업을 실행하는 것을 멈추지 않습니다.
-- Routes가 `async`로 정의된 경우 `await`를 통해 정기적으로 호출되며, 이는 FastAPI는 사용자가 `non-blocking I/O 작업`만 수행할 것임을 신뢰합니다.
+- Routes가 `async`로 정의된 경우 `await`를 통해 정기적으로 호출되며, FastAPI는 사용자가 `non-blocking I/O 작업`만 수행할 것임을 신뢰합니다.
 
 주의할 점은 사용자가 해당 신뢰에 배신하여 비동기 routes 내에서 blocking 작업을 실행하면 해당 차단 작업이 완료될 때까지 이벤트 루프가 다음 작업을 실행할 수 없다는 것입니다.
 ```python
