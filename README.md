@@ -1,39 +1,38 @@
 ## FastAPI Best Practices <!-- omit from toc -->
-Opinionated list of best practices and conventions I use in startups.
+스타트업에서 사용하는 모범 사례와 관례에 대한 의견 목록입니다.
 
-For the last several years in production,
-we have been making good and bad decisions that impacted our developer experience dramatically.
-Some of them are worth sharing. 
+지난 몇 년 동안 프로덕션을 운영하면서 개발자 경험에 큰 영향을 미친 좋은 결정과 나쁜 결정을 내려왔습니다.
+그중 일부는 공유할 만한 가치가 있습니다.
 
 ## Contents  <!-- omit from toc -->
-- [Project Structure](#project-structure)
-- [Async Routes](#async-routes)
-  - [I/O Intensive Tasks](#io-intensive-tasks)
-  - [CPU Intensive Tasks](#cpu-intensive-tasks)
+- [프로젝트 구조](#프로젝트-구조)
+- [비동기 라우터](#async-routes)
+  - [I/O 집약적 작업](#io-intensive-tasks)
+  - [CPU 집약적 작업](#cpu-intensive-tasks)
 - [Pydantic](#pydantic)
-  - [Excessively use Pydantic](#excessively-use-pydantic)
-  - [Custom Base Model](#custom-base-model)
-  - [Decouple Pydantic BaseSettings](#decouple-pydantic-basesettings)
-- [Dependencies](#dependencies)
-  - [Beyond Dependency Injection](#beyond-dependency-injection)
-  - [Chain Dependencies](#chain-dependencies)
-  - [Decouple \& Reuse dependencies. Dependency calls are cached](#decouple--reuse-dependencies-dependency-calls-are-cached)
-  - [Prefer `async` dependencies](#prefer-async-dependencies)
-- [Miscellaneous](#miscellaneous)
-  - [Follow the REST](#follow-the-rest)
-  - [FastAPI response serialization](#fastapi-response-serialization)
-  - [If you must use sync SDK, then run it in a thread pool.](#if-you-must-use-sync-sdk-then-run-it-in-a-thread-pool)
-  - [ValueErrors might become Pydantic ValidationError](#valueerrors-might-become-pydantic-validationerror)
+  - [Pydantic 초월](#excessively-use-pydantic)
+  - [사용자 정의 Base Model](#custom-base-model)
+  - [Pydantic BaseSettings 분리](#decouple-pydantic-basesettings)
+- [의존성](#dependencies)
+  - [의존성 주입 저 너머로](#beyond-dependency-injection)
+  - [의존성 연결](#chain-dependencies)
+  - [의존성 분리 및 재사용. 의존성 호출이 캐시됨](#decouple--reuse-dependencies-dependency-calls-are-cached)
+  - [가급적 `비동기` 의존성을 우선](#prefer-async-dependencies)
+- [기타](#miscellaneous)
+  - [REST를 따릅시다](#follow-the-rest)
+  - [FastAPI 응답 직렬화](#fastapi-response-serialization)
+  - [동기화 SDK를 사용해야 하는 경우 스레드 풀에서 실행합니다.](#if-you-must-use-sync-sdk-then-run-it-in-a-thread-pool)
+  - [ValueErrors가 Pydantic ValidationError가 될 수 있습니다.](#valueerrors-might-become-pydantic-validationerror)
   - [Docs](#docs)
-  - [Set DB keys naming conventions](#set-db-keys-naming-conventions)
+  - [DB 키 명명 규칙 설정](#set-db-keys-naming-conventions)
   - [Migrations. Alembic](#migrations-alembic)
-  - [Set DB naming conventions](#set-db-naming-conventions)
-  - [SQL-first. Pydantic-second](#sql-first-pydantic-second)
-  - [Set tests client async from day 0](#set-tests-client-async-from-day-0)
-  - [Use ruff](#use-ruff)
-- [Bonus Section](#bonus-section)
+  - [DB 명명 규칙 설정](#set-db-naming-conventions)
+  - [SQL 우선. Pydantic 차선](#sql-first-pydantic-second)
+  - [개발 0일차부터 테스트 클라이언트를 비동기화 합시다.](#set-tests-client-async-from-day-0)
+  - [ruff를 사용합시다](#use-ruff)
+- [보너스 섹션](#bonus-section)
 
-## Project Structure
+## 프로젝트 구조
 There are many ways to structure a project, but the best structure is one that is consistent, straightforward, and free of surprises.
 
 Many example projects and tutorials divide the project by file type (e.g., crud, routers, models), which works well for microservices or projects with fewer scopes. However, this approach didn't fit our monolith with many domains and modules.
