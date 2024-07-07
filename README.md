@@ -6,18 +6,18 @@
 
 ## Contents  <!-- omit from toc -->
 - [프로젝트 구조](#프로젝트-구조)
-- [비동기 라우터](#async-routes)
-  - [I/O 집약적 작업](#io-intensive-tasks)
-  - [CPU 집약적 작업](#cpu-intensive-tasks)
+- [비동기 Routes](#비동기-routes)
+  - [I/O 집약적 작업](#io-집약적-작업)
+  - [CPU 집약적 작업](#cpu-집약적-작업)
 - [Pydantic](#pydantic)
   - [Pydantic 초월](#excessively-use-pydantic)
   - [사용자 정의 Base Model](#custom-base-model)
   - [Pydantic BaseSettings 분리](#decouple-pydantic-basesettings)
-- [의존성](#dependencies)
-  - [의존성 주입 저 너머로](#beyond-dependency-injection)
-  - [의존성 연결](#chain-dependencies)
-  - [의존성 분리 및 재사용. 의존성 호출이 캐시됨](#decouple--reuse-dependencies-dependency-calls-are-cached)
-  - [가급적 `비동기` 의존성을 우선](#prefer-async-dependencies)
+- [종속성](#dependencies)
+  - [종속성 주입 저 너머로](#beyond-dependency-injection)
+  - [종속성 연결](#chain-dependencies)
+  - [종속성 분리 및 재사용. 종속성 호출이 캐시됨](#decouple--reuse-dependencies-dependency-calls-are-cached)
+  - [가급적 `비동기` 종속성을 우선](#prefer-async-dependencies)
 - [기타](#miscellaneous)
   - [REST를 따릅시다](#follow-the-rest)
   - [FastAPI 응답 직렬화](#fastapi-response-serialization)
@@ -33,11 +33,11 @@
 - [보너스 섹션](#bonus-section)
 
 ## 프로젝트 구조
-There are many ways to structure a project, but the best structure is one that is consistent, straightforward, and free of surprises.
+프로젝트를 구성하는 방법에는 여러 가지가 있지만, 가장 좋은 구조는 일관되고 간단하며 돌발 상황이 없는 구조입니다.
 
-Many example projects and tutorials divide the project by file type (e.g., crud, routers, models), which works well for microservices or projects with fewer scopes. However, this approach didn't fit our monolith with many domains and modules.
+많은 예제 프로젝트와 튜토리얼은 파일 유형(예: CRUD, 라우터, 모델)별로 프로젝트를 나누는데, 이는 마이크로서비스나 범위가 적은 프로젝트에 적합합니다. 하지만 이 접근 방식은 도메인과 모듈이 많은 모놀리스에는 적합하지 않았습니다.
 
-The structure I found more scalable and evolvable for these cases is inspired by Netflix's [Dispatch](https://github.com/Netflix/dispatch), with some minor modifications.
+이 문서에서 제안하는 [프로젝트 구조](#프로젝트-구조)는 확장 및 진화에 용이하며 Netflix의 [Dispatch](https://github.com/Netflix/dispatch)에서 영감을 받아 약간의 수정을 통해 탄생했습니다.
 ```
 fastapi-project
 ├── alembic/
@@ -89,41 +89,38 @@ fastapi-project
 ├── logging.ini
 └── alembic.ini
 ```
-1. Store all domain directories inside `src` folder
-   1. `src/` - highest level of an app, contains common models, configs, and constants, etc.
-   2. `src/main.py` - root of the project, which inits the FastAPI app
-2. Each package has its own router, schemas, models, etc.
-   1. `router.py` - is a core of each module with all the endpoints
-   2. `schemas.py` - for pydantic models
-   3. `models.py` - for db models
-   4. `service.py` - module specific business logic  
-   5. `dependencies.py` - router dependencies
-   6. `constants.py` - module specific constants and error codes
-   7. `config.py` - e.g. env vars
-   8. `utils.py` - non-business logic functions, e.g. response normalization, data enrichment, etc.
-   9. `exceptions.py` - module specific exceptions, e.g. `PostNotFound`, `InvalidUserData`
-3. When package requires services or dependencies or constants from other packages - import them with an explicit module name
+1. 모든 도메인 디렉토리를 `src` 폴더에 저장합니다.
+   1. `src/` - 앱의 최상위 레벨, 공통 모델, 구성 및 상수 등을 포함합니다.
+   2. `src/main.py` - 프로젝트의 루트로, FastAPI 앱을 초기화합니다.
+2. 각 패키지에는 자체 라우터, 스키마, 모델 등이 있습니다.
+   1. `router.py` - 모든 엔드포인트가 있는 각 모듈의 핵심입니다.
+   2. `schemas.py` - Pydantic 모델용
+   3. `models.py` - DB 모델용
+   4. `service.py` - 모듈별 비즈니스 로직  
+   5. `dependencies.py` - 라우터 종속성
+   6. `constants.py` - 모듈별 상수 및 오류 코드
+   7. `config.py` - 예: 환경 변수
+   8. `utils.py` - 非비즈니스 로직 함수(예: 응답 정규화, 데이터 강화 등)
+   9. `exceptions.py` - 모듈별 예외 처리(예: `PostNotFound`, `InvalidUserData`)
+3. 패키지에 다른 패키지의 서비스나 종속성 또는 상수가 필요한 경우 - 명시적인 모듈 이름으로 가져옵니다.
 ```python
 from src.auth import constants as auth_constants
 from src.notifications import service as notification_service
-from src.posts.constants import ErrorCode as PostsErrorCode  # in case we have Standard ErrorCode in constants module of each package
+from src.posts.constants import ErrorCode as PostsErrorCode  # 각 패키지의 상수 모듈에 표준 오류 코드가 있는 경우 
 ```
 
-## Async Routes
-FastAPI is an async framework, in the first place. It is designed to work with async I/O operations and that is the reason it is so fast. 
+## 비동기 Routes
+FastAPI는 애초에 비동기 프레임워크입니다. 비동기 I/O 작업과 함께 작동하도록 설계되었기 때문에 매우 빠릅니다. 
 
-However, FastAPI doesn't restrict you to use only `async` routes, and the developer can use `sync` routes as well. This might confuse beginner developers into believing that they are the same, but they are not.
+그러나 FastAPI는 `비동기` routes만 사용하도록 제한하지 않으며, 개발자는 `동기` routes도 사용할 수 있습니다. 초보 개발자는 이 두 가지가 동일하다고 혼동할 수 있지만 그렇지 않습니다.
 
-### I/O Intensive Tasks
-Under the hood, FastAPI can [effectively handle](https://fastapi.tiangolo.com/async/#path-operation-functions) both async and sync I/O operations. 
-- FastAPI runs `sync` routes in the [threadpool](https://en.wikipedia.org/wiki/Thread_pool) 
-and blocking I/O operations won't stop the [event loop](https://docs.python.org/3/library/asyncio-eventloop.html) 
-from executing the tasks. 
-- If the route is defined `async` then it's called regularly via `await` 
-and FastAPI trusts you to do only non-blocking I/O operations.
 
-The caveat is if you fail that trust and execute blocking operations within async routes, 
-the event loop will not be able to run the next tasks until that blocking operation is done.
+### I/O 집약적 작업
+내부적으로 FastAPI는 비동기 및 동기 I/O 작업을 모두 [효과적으로 처리](https://fastapi.tiangolo.com/async/#path-operation-functions) 할 수 있습니다. 
+- FastAPI는 [스레드풀](https://en.wikipedia.org/wiki/Thread_pool)에서 `sync` routes를 실행하며, `blocking I/O 작업`은 [이벤트 루프](https://docs.python.org/3/library/asyncio-eventloop.html)가 작업을 실행하는 것을 멈추지 않습니다.
+- Routes가 `async`로 정의된 경우 `await`를 통해 정기적으로 호출되며, 이는 FastAPI는 사용자가 `non-blocking I/O 작업`만 수행할 것임을 신뢰합니다.
+
+주의할 점은 사용자가 해당 신뢰에 배신하여 비동기 routes 내에서 blocking 작업을 실행하면 해당 차단 작업이 완료될 때까지 이벤트 루프가 다음 작업을 실행할 수 없다는 것입니다.
 ```python
 import asyncio
 import time
@@ -180,7 +177,7 @@ async def perfect_ping():
 > - Threads require more resources than coroutines, so they are not as cheap as async I/O operations.
 > - Thread pool has a limited number of threads, i.e. you might run out of threads and your app will become slow. [Read more](https://github.com/Kludex/fastapi-tips?tab=readme-ov-file#2-be-careful-with-non-async-functions) (external link)
 
-### CPU Intensive Tasks
+### CPU 집약적 작업
 The second caveat is that operations that are non-blocking awaitables or are sent to the thread pool must be I/O intensive tasks (e.g. open file, db call, external API call).
 - Awaiting CPU-intensive tasks (e.g. heavy calculations, data processing, video transcoding) is worthless since the CPU has to work to finish the tasks, 
 while I/O operations are external and server does nothing while waiting for that operations to finish, thus it can go to the next tasks.
