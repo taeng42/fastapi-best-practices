@@ -12,7 +12,7 @@
 - [Pydantic](#pydantic)
   - [Pydantic 초월](#excessively-use-pydantic)
   - [사용자 정의 Base Model](#사용자-정의-Base-Model)
-  - [Pydantic BaseSettings 분리](#decouple-pydantic-basesettings)
+  - [Pydantic BaseSettings 분리](#Pydantic-BaseSettings-분리)
 - [종속성](#dependencies)
   - [종속성 주입 저 너머로](#beyond-dependency-injection)
   - [종속성 연결](#chain-dependencies)
@@ -248,10 +248,11 @@ class CustomModel(BaseModel):
 
 ```
 위의 예에서는 글로벌 Base Model을 만들기로 했습니다:
+In the example above, we have decided to create a global base model that:
 - 모든 날짜/시간 필드를 명시적인 표준 시간대를 사용하여 표준 형식으로 직렬화합니다.
 - 직렬화 가능한 필드만 있는 딕셔너리를 반환하는 메서드를 제공합니다.
 
-### 종속성 분리 및 재사용. 종속성 호출이 캐시됨
+### Pydantic BaseSettings 분리
 BaseSettings was a great innovation for reading environment variables, but having a single BaseSettings for the whole app can become messy over time. To improve maintainability and organization, we have split the BaseSettings across different modules and domains.
 ```python
 # src.auth.config
