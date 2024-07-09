@@ -690,7 +690,6 @@ file_template = %%(year)d-%%(month).2d-%%(day).2d_%%(slug)s
 - 일반적으로 데이터베이스는 CPython보다 훨씬 빠르고 깔끔하게 데이터 처리를 처리합니다.
 - 복잡한 조인과 간단한 데이터 조작은 모두 SQL로 수행하는 것이 좋습니다.
 - 중첩된 객체가 있는 응답의 경우 DB에서 JSON을 집계하는 것이 좋습니다.
-  = It's preferable to aggregate JSONs in DB for responses with nested objects. ()
 ```python
 # src.posts.service
 from typing import Any
