@@ -248,7 +248,6 @@ class CustomModel(BaseModel):
 
 ```
 위의 예에서는 글로벌 Base Model을 만들기로 했습니다:
-In the example above, we have decided to create a global base model that:
 - 모든 날짜/시간 필드를 명시적인 표준 시간대를 사용하여 표준 형식으로 직렬화합니다.
 - 직렬화 가능한 필드만 있는 딕셔너리를 반환하는 메서드를 제공합니다.
 
