@@ -13,24 +13,24 @@
   - [Pydantic 초월](#excessively-use-pydantic)
   - [사용자 정의 Base Model](#사용자-정의-Base-Model)
   - [Pydantic BaseSettings 분리](#Pydantic-BaseSettings-분리)
-- [종속성](#dependencies)
-  - [종속성 주입 저 너머로](#beyond-dependency-injection)
-  - [종속성 연결](#chain-dependencies)
+- [종속성](#종속성)
+  - [종속성 주입 저 너머로](#종속성-주입-저-너머로)
+  - [종속성 연결](#종속성-연결)
   - [종속성 분리 및 재사용. 종속성 호출이 캐시됨](#종속성-분리-및-재사용.-종속성-호출이-캐시됨)
-  - [가급적 `비동기` 종속성을 우선](#prefer-async-dependencies)
-- [기타](#miscellaneous)
-  - [REST를 따릅시다](#follow-the-rest)
-  - [FastAPI 응답 직렬화](#fastapi-response-serialization)
-  - [동기화 SDK를 사용해야 하는 경우 스레드 풀에서 실행합니다.](#if-you-must-use-sync-sdk-then-run-it-in-a-thread-pool)
-  - [ValueErrors가 Pydantic ValidationError가 될 수 있습니다.](#valueerrors-might-become-pydantic-validationerror)
+  - [가급적 async 종속성을 우선](#가급적-async-종속성을-우선)
+- [기타](#기타)
+  - [REST를 따릅시다](#REST를-따릅시다)
+  - [FastAPI 응답 직렬화](#FastAPI-응답-직렬화)
+  - [동기화 SDK를 사용해야 하는 경우 스레드 풀에서 실행합니다.](#동기화-SDK를-사용해야-하는-경우-스레드-풀에서-실행합니다.)
+  - [ValueErrors가 Pydantic ValidationError가 될 수 있습니다.](#ValueErrors가-Pydantic-ValidationError가-될-수-있습니다.)
   - [Docs](#docs)
-  - [DB 키 명명 규칙 설정](#set-db-keys-naming-conventions)
+  - [DB 키 명명 규칙 설정](#DB-키-명명-규칙-설정)
   - [Migrations. Alembic](#migrations-alembic)
-  - [DB 명명 규칙 설정](#set-db-naming-conventions)
-  - [SQL 우선. Pydantic 차선](#sql-first-pydantic-second)
-  - [개발 0일차부터 테스트 클라이언트를 비동기화 합시다.](#set-tests-client-async-from-day-0)
-  - [ruff를 사용합시다](#use-ruff)
-- [보너스 섹션](#bonus-section)
+  - [DB 명명 규칙 설정](#DB-명명-규칙-설정)
+  - [SQL 우선. Pydantic 차선](#SQL-우선.-Pydantic-차선)
+  - [개발 0일차부터 테스트 클라이언트를 비동기화 합시다.](#개발-0일차부터-테스트-클라이언트를-비동기화-합시다.)
+  - [ruff를 사용합시다](#ruff를-사용합시다)
+- [보너스 섹션](#보너스-섹션)
 
 ## 프로젝트 구조
 프로젝트를 구성하는 방법에는 여러 가지가 있지만, 가장 좋은 구조는 일관되고 간단하며 돌발 상황이 없는 구조입니다.
@@ -253,7 +253,7 @@ In the example above, we have decided to create a global base model that:
 - 직렬화 가능한 필드만 있는 딕셔너리를 반환하는 메서드를 제공합니다.
 
 ### Pydantic BaseSettings 분리
-BaseSettings was a great innovation for reading environment variables, but having a single BaseSettings for the whole app can become messy over time. To improve maintainability and organization, we have split the BaseSettings across different modules and domains.
+BaseSettings는 환경 변수를 읽기 위한 훌륭한 혁신이었지만, 전체 앱에 대해 하나의 BaseSettings를 사용하면 시간이 지남에 따라 지저분해질 수 있습니다. 유지 관리와 정리를 개선하기 위해 여러 모듈과 도메인에 BaseSettings를 분할했습니다.
 ```python
 # src.auth.config
 from datetime import timedelta
@@ -303,8 +303,8 @@ settings = Config()
 
 ```
 
-## Dependencies
-### Beyond Dependency Injection
+## 종속성
+### 종속성 주입 저 너머로
 Pydantic is a great schema validator, but for complex validations that involve calling a database or external services, it is not sufficient.
 
 FastAPI documentation mostly presents dependencies as DI for endpoints, but they are also excellent for request validation.
@@ -343,7 +343,7 @@ async def get_post_reviews(post: dict[str, Any] = Depends(valid_post_id)):
 If we didn't put data validation to dependency, we would have to validate `post_id` exists
 for every endpoint and write the same tests for each of them. 
 
-### Chain Dependencies
+### 종속성 연결
 Dependencies can use other dependencies and avoid code repetition for the similar logic.
 ```python
 # dependencies.py
@@ -384,7 +384,7 @@ async def get_user_post(post: dict[str, Any] = Depends(valid_owned_post)):
     return post
 
 ```
-### Decouple & Reuse dependencies. Dependency calls are cached
+### 종속성 분리 및 재사용. 종속성 호출이 캐시됨
 Dependencies can be reused multiple times, and they won't be recalculated - FastAPI caches dependency's result within a request's scope by default,
 i.e. if `valid_post_id` gets called multiple times in one route, it will be called only once.
 
@@ -457,7 +457,7 @@ async def get_user_post(
 
 ```
 
-### Prefer `async` dependencies
+### 가급적 async 종속성을 우선
 FastAPI supports both `sync` and `async` dependencies, and there is a temptation to use `sync` dependencies, when you don't have to await anything, but that might not be the best choice.
 
 Just as with routes, `sync` dependencies are run in the thread pool. And threads here also come with a price and limitations, that are redundant, if you just make a small non-I/O operation.
@@ -465,8 +465,8 @@ Just as with routes, `sync` dependencies are run in the thread pool. And threads
 [See more](https://github.com/Kludex/fastapi-tips?tab=readme-ov-file#9-your-dependencies-may-be-running-on-threads) (external link)
 
 
-## Miscellaneous
-### Follow the REST
+## 기타
+### REST를 따릅시다
 Developing RESTful API makes it easier to reuse dependencies in routes like these:
    1. `GET /courses/:course_id`
    2. `GET /courses/:course_id/chapters/:chapter_id/lessons`
@@ -507,7 +507,7 @@ async def get_user_profile_by_id(
     return creator_profile
 
 ```
-### FastAPI response serialization
+### FastAPI 응답 직렬화
 If you think you can return Pydantic object that matches your route's `response_model` to make some optimizations,
 then it's wrong. 
 
@@ -538,7 +538,7 @@ async def root():
 [INFO] [2022-08-28 12:00:00.000020] created pydantic model
 ```
 
-### If you must use sync SDK, then run it in a thread pool.
+### 동기화 SDK를 사용해야 하는 경우 스레드 풀에서 실행합니다.
 If you must use a library to interact with external services, and it's not `async`,
 then make the HTTP calls in an external worker thread.
 
@@ -559,7 +559,7 @@ async def call_my_sync_library():
     await run_in_threadpool(client.make_request, data=my_data)
 ```
 
-### ValueErrors might become Pydantic ValidationError
+### ValueErrors가 Pydantic ValidationError가 될 수 있습니다.
 If you raise a `ValueError` in a Pydantic schema that is directly faced by the client, it will return a nice detailed response to users.
 ```python
 # src.profiles.schemas
@@ -650,7 +650,7 @@ async def documented_route():
 Will generate docs like this:
 ![FastAPI Generated Custom Response Docs](images/custom_responses.png "Custom Response Docs")
 
-### Set DB keys naming conventions
+### DB 키 명명 규칙 설정
 Explicitly setting the indexes' namings according to your database's convention is preferable over sqlalchemy's. 
 ```python
 from sqlalchemy import MetaData
@@ -674,7 +674,7 @@ make sure the only thing that is dynamic is the data itself, not its structure.
 # alembic.ini
 file_template = %%(year)d-%%(month).2d-%%(day).2d_%%(slug)s
 ```
-### Set DB naming conventions
+### DB 명명 규칙 설정
 Being consistent with names is important. Some rules we followed:
 1. lower_case_snake
 2. singular form (e.g. `post`, `post_like`, `user_playlist`)
@@ -684,7 +684,7 @@ Being consistent with names is important. Some rules we followed:
    2. use `post_id` for all abstract tables like `post_like`, `post_view`, but use concrete naming in relevant modules like `course_id` in `chapters.course_id`
 5. `_at` suffix for datetime
 6. `_date` suffix for date
-### SQL-first. Pydantic-second
+### SQL 우선. Pydantic 차선
 - Usually, database handles data processing much faster and cleaner than CPython will ever do. 
 - It's preferable to do all the complex joins and simple data manipulations with SQL.
 - It's preferable to aggregate JSONs in DB for responses with nested objects.
@@ -769,7 +769,7 @@ async def get_creator_posts(creator: dict[str, Any] = Depends(valid_creator_id))
 
    return posts
 ```
-### Set tests client async from day 0
+### 개발 0일차부터 테스트 클라이언트를 비동기화 합시다.
 Writing integration tests with DB will most likely lead to messed up event loop errors in the future.
 Set the async test client immediately, e.g. [httpx](https://github.com/encode/starlette/issues/652)
 ```python
@@ -795,7 +795,7 @@ async def test_create_post(client: TestClient):
 ```
 Unless you have sync db connections (excuse me?) or aren't planning to write integration tests.
 
-### Use ruff
+### ruff를 사용합시다
 With linters, you can forget about formatting the code and focus on writing the business logic.
 
 [Ruff](https://github.com/astral-sh/ruff) is "blazingly-fast" new linter that replaces black, autoflake, isort, and supports more than 600 lint rules.
@@ -809,7 +809,7 @@ ruff --fix src
 ruff format src
 ```
 
-## Bonus Section
+## 보너스 섹션
 Some very kind people shared their own experience and best practices that are definitely worth reading.
 Check them out at [issues](https://github.com/zhanymkanov/fastapi-best-practices/issues) section of the project.
 
